@@ -110,7 +110,7 @@ The underlying dataset available to you in your relations leverages a simple wra
 
 class Posts < ROM::Relation[:http]
 
-  def example_usage(*args)
+  def example_usage(*args, opts = {}, &block)
 
     # Generally, you won't need to access the raw `dataset` object.
     # You definitely don't want to `.call` it or enumerate it inside of the relationship–
@@ -153,7 +153,23 @@ class Posts < ROM::Relation[:http]
     # Make a request to PUT to root_url/relation_name/1 with an encoded body
     post(form: {fizz: :buzz}).put(1)
 
-    # Finally, the rest of the `http` library dsl is available to modify other parts of the request:
+    # Using the params/form/body syntax above will override previously set values:
+
+    # Use query string parameters: GET from root_url/relation_name?fizz=buzz
+    get(params: { foo: :bar }).get(params: { fizz: :buzz })
+
+    # For finer control, you can use the params/form/body DSL methods:
+    # Use query string parameters: GET from root_url/relation_name?foo=baz&fizz=buzz
+    get(params: { foo: :bar }).params(fizz: :buzz) do |old_params|
+      old_params.merge(foo: :bar)
+    end
+
+    # Since the default dataset is a get request to the relation_name, and the DSL delegates to the dataset,
+    # it's trivial to make composable relation methods that simply modify the querystring parameters with a one-liner:
+    params page: opts.fetch(:page, 1), per_page: opts.fetch(:per_page, 10)
+    params order: opts.fetch(:order, :asc), column: opts.fetch(:column)
+
+    # Finally, the rest of the `http` library DSL is available to modify other parts of the request:
     get('foobar').headers("Cookie" => "9wq3w").basic_auth(:user => "user", :pass => "pass").accept(:json)
 
   end
