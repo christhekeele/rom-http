@@ -7,16 +7,16 @@ module ROM
     #  - HTTP verbs don't trigger network calls, the call method does
     #  - Paths are composable off of a root url
 
-    class Dataset < Struct.new(:connection, :path, :verb, :http)
+    class Dataset < Struct.new(:connection, :path, :verb, :options)
       include DSL
       include Enumerable
 
-      def initialize(connection, path = nil, verb = :get)
-        super connection, path, verb
+      def initialize(connection, path = nil, verb = :get, options = {})
+        super connection, path, verb, options
       end
 
       def call
-        connection.client.send(verb, url, connection.options)
+        connection.client.send(verb, url, merged_options)
       end
 
       def url
@@ -39,6 +39,12 @@ module ROM
 
       def merge_paths(*paths)
         paths.map(&:to_s).reject(&:empty?).join('/').gsub(%r{(?<!:)/+}, '/')
+      end
+
+      def merged_options
+        connection.options.select do |key, value|
+          HTTP::Options.defined_options.include? key
+        end.merge(options)
       end
 
     end
